@@ -1,0 +1,180 @@
+# Clasificación de sentimiento mediante NLP
+
+## Objetivo
+
+El objetivo de este bloque es construir un modelo de clasificación de sentimiento a partir del texto de las reseñas de los clientes.
+
+La variable objetivo utilizada fue `sentiment_label`, que inicialmente contiene tres clases:
+
+- `positive`
+- `neutral`
+- `negative`
+
+La variable predictora utilizada fue `clean_text`, que contiene el texto de las reseñas ya preprocesado y limpio.
+
+---
+
+## Preparación de los datos
+
+Para trabajar con texto en RapidMiner se utilizó el operador `Process Documents from Data`.
+
+Este operador permitió transformar las reseñas en una representación numérica mediante TF-IDF.
+
+La configuración general utilizada fue:
+
+- `Vector creation`: TF-IDF
+- `Keep text`: desactivado
+- `Prune method`: by ranking
+- `Data management`: memory optimized
+
+TF-IDF permite representar cada reseña como un vector numérico basado en la importancia relativa de las palabras dentro del conjunto de documentos.
+
+---
+
+## Primer enfoque: clasificación multiclase
+
+Inicialmente se planteó el problema como una clasificación multiclase con las tres categorías originales:
+
+- `positive`
+- `neutral`
+- `negative`
+
+Para evitar fuga de información, se utilizaron únicamente las variables:
+
+- `clean_text`
+- `sentiment_label`
+
+Se descartaron otras variables como `review_score`, fechas u otros atributos que podían introducir información directa o indirecta sobre la etiqueta.
+
+El modelo probado en este enfoque fue `Naive Bayes`.
+
+### Resultado multiclase
+
+- Accuracy: `60.15%`
+
+Métricas por clase:
+
+| Clase | Recall |
+|---|---:|
+| positive | 68.68% |
+| neutral | 58.10% |
+| negative | 36.81% |
+
+### Interpretación
+
+El rendimiento del modelo multiclase fue limitado. La clase `neutral` introduce ambigüedad, ya que muchas reseñas neutrales pueden compartir vocabulario tanto con reseñas positivas como con negativas.
+
+Además, la clase negativa fue la más difícil de detectar, con un recall del `36.81%`.
+
+Por este motivo, se decidió probar un segundo enfoque binario, eliminando la clase neutral.
+
+---
+
+## Segundo enfoque: clasificación binaria
+
+En el segundo enfoque se transformó el problema en una clasificación binaria de polaridad:
+
+- `positive`
+- `negative`
+
+Para ello, se filtraron los ejemplos con etiqueta neutral mediante `sentiment_label != neutral`.
+
+Posteriormente, se definió la clase positiva con el operador `Set Positive Value`, estableciendo `positive value = positive`.
+
+De esta forma, el modelo trabaja únicamente con reseñas claramente positivas o claramente negativas.
+
+---
+
+## Modelos probados en clasificación binaria
+
+Se probaron varios modelos utilizando la misma representación TF-IDF del texto:
+
+- `Naive Bayes`
+- `SVM / Logistic Regression SVM`
+- `Logistic Regression`
+
+También se probaron diferentes niveles de reducción del vocabulario mediante pruning por ranking.
+
+---
+
+## Resultados obtenidos
+
+| Modelo | Tipo de problema | Clases | Pruning | Accuracy |
+|---|---|---|---|---:|
+| Naive Bayes | Multiclase | positive / neutral / negative | 0.90 - 1.00 | 60.15% |
+| Naive Bayes | Binario | positive / negative | 0.90 - 1.00 | 85.37% |
+| SVM / Logistic Regression SVM | Binario | positive / negative | 0.90 - 1.00 | 85.29% |
+| Naive Bayes | Binario | positive / negative | 0.95 - 1.00 | 86.55% |
+| Logistic Regression | Binario | positive / negative | 0.95 - 1.00 | 91.03% |
+
+---
+
+## Mejor modelo obtenido
+
+El mejor modelo fue:
+
+- Modelo: `Logistic Regression`
+- Tipo de problema: binario
+- Clases: `positive` y `negative`
+- Variable predictora: `clean_text`
+- Representación del texto: TF-IDF
+- Pruning: `0.95 - 1.00`
+- Accuracy: `91.03%`
+
+### Matriz de confusión del mejor modelo
+
+| Predicción | True positive | True negative | Precision |
+|---|---:|---:|---:|
+| pred. positive | 7309 | 397 | 94.85% |
+| pred. negative | 558 | 2385 | 81.04% |
+
+Recall por clase:
+
+| Clase real | Recall |
+|---|---:|
+| positive | 92.91% |
+| negative | 85.73% |
+
+---
+
+## Interpretación del mejor modelo
+
+El modelo de Logistic Regression obtuvo el mejor rendimiento global, con una accuracy del `91.03%`.
+
+Además, presentó un buen equilibrio entre la detección de reseñas positivas y negativas:
+
+- Recall positivo: `92.91%`
+- Recall negativo: `85.73%`
+- Precisión positiva: `94.85%`
+- Precisión negativa: `81.04%`
+
+Esto indica que el modelo es capaz de clasificar correctamente la mayoría de las reseñas positivas y negativas, manteniendo un nivel aceptable de precisión en ambas clases.
+
+---
+
+## Comparación con otros modelos
+
+Naive Bayes obtuvo buenos resultados en clasificación binaria, especialmente considerando su simplicidad y rapidez. Sin embargo, Logistic Regression superó claramente a Naive Bayes cuando se utilizó pruning `0.95 - 1.00`.
+
+La comparación más relevante es:
+
+| Modelo | Accuracy |
+|---|---:|
+| Naive Bayes binario | 86.55% |
+| Logistic Regression binario | 91.03% |
+
+La mejora obtenida por Logistic Regression fue de aproximadamente `4.48` puntos porcentuales respecto a Naive Bayes con la misma configuración de pruning.
+
+---
+
+## Conclusión
+
+El análisis muestra que la clasificación binaria de sentimiento obtiene mejores resultados que la clasificación multiclase.
+
+La clase `neutral` introduce ambigüedad semántica y dificulta el aprendizaje del modelo, por lo que eliminarla permite construir un clasificador de polaridad más fiable.
+
+El mejor resultado se obtuvo con `Logistic Regression` sobre una representación TF-IDF del texto limpio, eliminando la clase neutral y trabajando como problema binario de polaridad.
+
+Este modelo alcanzó una accuracy del `91.03%`, superando a Naive Bayes y SVM en las condiciones probadas.
+
+Por tanto, el modelo seleccionado para la clasificación de sentimiento es `Logistic Regression + TF-IDF + clasificación binaria positive/negative`.

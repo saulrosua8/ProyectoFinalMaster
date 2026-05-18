@@ -1,0 +1,50 @@
+{
+    "model": "TF-IDF + Logistic Regression",
+    "problem_type": "Binary sentiment classification",
+    "classes": [
+        "positive",
+        "negative"
+    ],
+    "accuracy": 0.9241243309230913,
+    "classification_report": {
+        "negative": {
+            "precision": 0.8014660965180208,
+            "recall": 0.9432063263838965,
+            "f1-score": 0.8665785997357992,
+            "support": 2782.0
+        },
+        "positive": {
+            "precision": 0.9785762711864406,
+            "recall": 0.9173763823566798,
+            "f1-score": 0.9469885841753051,
+            "support": 7867.0
+        },
+        "accuracy": 0.9241243309230913,
+        "macro avg": {
+            "precision": 0.8900211838522307,
+            "recall": 0.9302913543702882,
+            "f1-score": 0.9067835919555521,
+            "support": 10649.0
+        },
+        "weighted avg": {
+            "precision": 0.9323070904250974,
+            "recall": 0.9241243309230913,
+            "f1-score": 0.9259818627262765,
+            "support": 10649.0
+        }
+    },
+    "confusion_matrix_labels": [
+        "positive",
+        "negative"
+    ],
+    "confusion_matrix": [
+        [
+            7217,
+            650
+        ],
+        [
+            158,
+            2624
+        ]
+    ]
+}

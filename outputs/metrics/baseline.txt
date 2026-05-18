@@ -1,0 +1,7 @@
+Modelo baseline NLP:
+Naive Bayes + TF-IDF
+Muestra: 10.000 reviews
+Accuracy: 81.87%
+Recall positive: 86.67%
+Recall neutral: 55.78%
+Recall negative: 77.46%

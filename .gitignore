@@ -1,0 +1,29 @@
+# Entorno virtual
+.venv/
+venv/
+env/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.ipynb_checkpoints/
+
+# Streamlit
+.streamlit/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# VS Code
+.vscode/
+
+# Archivos temporales
+*.tmp
+*.log
+
+# Eventos demo generados localmente
+outputs/live_events/demo_orders.csv
+outputs/live_events/demo_reviews.csv

@@ -1,0 +1,136 @@
+# Clustering de clientes con RapidMiner
+
+## Dataset utilizado
+
+Para el proceso de clustering se utilizó el archivo:
+
+`rfm_customers.csv`
+
+Este dataset fue generado previamente mediante PySpark a partir del conjunto de datos limpio de ventas. Cada fila representa un cliente único y contiene variables de comportamiento de compra y satisfacción.
+
+## Variables utilizadas
+
+| Variable | Descripción |
+|---|---|
+| `customer_unique_id` | Identificador único del cliente |
+| `recency` | Días desde la última compra |
+| `frequency` | Número de pedidos realizados |
+| `monetary` | Importe total gastado |
+| `avg_review_score` | Valoración media del cliente |
+| `total_items` | Número total de artículos comprados |
+| `distinct_products` | Número de productos distintos comprados |
+| `avg_order_value` | Valor medio por pedido |
+
+La variable `customer_unique_id` fue configurada con el rol de `id`, por lo que no participó en el cálculo de los clusters.
+
+---
+
+## Proceso realizado en RapidMiner
+
+El flujo utilizado en RapidMiner fue el siguiente:
+
+```text
+Read CSV
+↓
+Set Role
+↓
+Normalize
+↓
+K-Means
+↓
+Cluster Distance Performance
+↓
+Aggregate
+
+
+
+
+Interpretación de las variables normalizadas:
+
+recency bajo indica clientes con compras más recientes.
+recency alto indica clientes más antiguos o inactivos.
+avg_review_score alto indica mayor satisfacción.
+total_items alto indica mayor volumen de artículos comprados.
+distinct_products alto indica mayor variedad de productos comprados.
+monetary alto indica mayor gasto total.
+avg_order_value alto indica mayor valor medio por pedido.
+Interpretación de los clusters
+Cluster 0: Clientes recientes satisfechos
+
+Características principales:
+
+Baja recency.
+Alta valoración media.
+Frecuencia ligeramente superior.
+Gasto medio normal.
+Volumen de artículos moderado.
+
+Interpretación:
+
+Este grupo representa clientes que han comprado recientemente y que muestran una valoración media alta. Son clientes con una experiencia positiva y actividad reciente, por lo que constituyen un segmento saludable para la empresa.
+
+Posibles acciones:
+
+Campañas de fidelización.
+Recomendaciones personalizadas.
+Promociones para incentivar nuevas compras.
+Programas de retención.
+Cluster 1: Clientes de mayor actividad con baja satisfacción
+
+Características principales:
+
+Recency media.
+Valoración media baja.
+Mayor volumen relativo de artículos.
+Mayor variedad de productos.
+Gasto ligeramente superior.
+
+Interpretación:
+
+Este segmento agrupa clientes que presentan una mayor actividad de compra en términos de artículos y variedad de productos, pero con una satisfacción claramente inferior al resto. Es un grupo especialmente relevante, ya que combina valor económico con riesgo de pérdida o mala experiencia.
+
+Posibles acciones:
+
+Analizar causas de insatisfacción.
+Revisar tiempos de entrega.
+Revisar calidad de productos o vendedores.
+Priorizar atención al cliente.
+Aplicar campañas de recuperación o compensación.
+Cluster 2: Clientes antiguos satisfechos
+
+Características principales:
+
+Alta recency.
+Alta valoración media.
+Baja frecuencia.
+Gasto medio normal.
+Bajo volumen de artículos.
+
+Interpretación:
+
+Este grupo está formado por clientes que realizaron compras hace más tiempo, pero que tuvieron una experiencia positiva. Aunque actualmente parecen menos activos o inactivos, su satisfacción previa los convierte en candidatos interesantes para campañas de reactivación.
+
+Posibles acciones:
+
+Campañas de reactivación.
+Cupones de retorno.
+Emails personalizados.
+Recomendaciones basadas en compras anteriores.
+Conclusión del clustering
+
+El modelo de clustering permitió segmentar la base de clientes en tres perfiles diferenciados:
+
+Cluster	Nombre asignado	Interpretación
+cluster_0	Clientes recientes satisfechos	Clientes activos recientemente y con buena valoración
+cluster_1	Clientes de mayor actividad con baja satisfacción	Clientes con mayor actividad, pero con baja satisfacción
+cluster_2	Clientes antiguos satisfechos	Clientes inactivos o antiguos con buena experiencia previa
+
+La segmentación obtenida resulta útil para diseñar acciones de negocio diferenciadas. En particular, el cluster_1 representa un segmento crítico, ya que agrupa clientes con actividad económica relevante pero baja satisfacción. Por otro lado, los clusters 0 y 2 permiten identificar clientes satisfechos en diferentes momentos del ciclo de vida: recientes y antiguos.
+
+Texto resumen para la memoria
+
+Para la segmentación de clientes se utilizó el algoritmo K-Means sobre un dataset RFM enriquecido con variables de satisfacción y comportamiento de compra. Antes de aplicar el algoritmo, se asignó el identificador del cliente como rol id y se normalizaron las variables mediante Range Transformation, con el objetivo de evitar que las variables con mayor escala dominaran el cálculo de distancias.
+
+Se evaluaron distintos valores de k, concretamente entre 3 y 6, utilizando métricas internas como Davies-Bouldin y la distancia media al centroide. Aunque los valores superiores de k reducían la distancia interna, también generaban una mayor fragmentación de los segmentos. Finalmente, se seleccionó k = 3, al ofrecer el mejor equilibrio entre calidad del modelo, distribución de clientes e interpretabilidad.
+
+El modelo final permitió identificar tres segmentos principales: clientes recientes satisfechos, clientes de mayor actividad con baja satisfacción y clientes antiguos satisfechos. Esta segmentación permite plantear acciones diferenciadas de fidelización, recuperación y reactivación, aportando valor desde el punto de vista analítico y de negocio.
