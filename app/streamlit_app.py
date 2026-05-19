@@ -184,6 +184,71 @@ if section == "Inicio":
         - Simular eventos nuevos desde una tienda demo.
         """)
     st.divider()
+    st.divider()
+
+    st.subheader("Resumen ejecutivo")
+
+    # Cálculos principales
+    top_category = (
+        sales.groupby("product_category_name_english")["price"]
+        .sum()
+        .sort_values(ascending=False)
+        .index[0]
+    )
+
+    top_category_sales = (
+        sales.groupby("product_category_name_english")["price"]
+        .sum()
+        .sort_values(ascending=False)
+        .iloc[0]
+    )
+
+    avg_review_score = sales["avg_review_score"].mean()
+
+    orders_with_reviews = sales["avg_review_score"].notna().sum()
+
+    # Cálculo de retrasos
+    logistics_tmp = sales.copy()
+
+    logistics_tmp["order_delivered_customer_date"] = pd.to_datetime(
+        logistics_tmp["order_delivered_customer_date"],
+        errors="coerce"
+    )
+
+    logistics_tmp["order_estimated_delivery_date"] = pd.to_datetime(
+        logistics_tmp["order_estimated_delivery_date"],
+        errors="coerce"
+    )
+
+    logistics_tmp["delivery_delay_days"] = (
+        logistics_tmp["order_delivered_customer_date"] -
+        logistics_tmp["order_estimated_delivery_date"]
+    ).dt.days
+
+    logistics_tmp["is_late_delivery"] = logistics_tmp["delivery_delay_days"] > 0
+
+    late_rate = logistics_tmp["is_late_delivery"].mean()
+
+    col1, col2, col3 = st.columns(3)
+
+    col1.metric("Categoría líder", top_category)
+    col2.metric("Valoración media", f"{avg_review_score:.2f}/5")
+    col3.metric("Pedidos con retraso", f"{late_rate:.2%}")
+
+    st.markdown(f"""
+    **Lectura rápida del negocio:**
+
+    - La categoría con mayor volumen de ventas es **{top_category}**, con un importe histórico aproximado de **{top_category_sales:,.2f}**.
+    - La valoración media global de los pedidos es **{avg_review_score:.2f}/5**.
+    - El porcentaje de pedidos entregados con retraso es **{late_rate:.2%}**.
+
+    **Posibles acciones:**
+
+    - Priorizar campañas comerciales sobre las categorías con mayor facturación.
+    - Revisar las categorías con mayor retraso logístico.
+    - Utilizar el análisis de sentimiento para detectar clientes insatisfechos de forma temprana.
+    - Aplicar recomendaciones personalizadas para mejorar la conversión y fidelización.
+    """)
     st.subheader("Indicadores generales")
 
     col1, col2, col3, col4 = st.columns(4)
