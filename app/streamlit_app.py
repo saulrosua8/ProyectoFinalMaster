@@ -3,6 +3,7 @@ import pandas as pd
 import joblib
 import os
 import plotly.express as px
+from deep_translator import GoogleTranslator
 
 # =========================
 # CONFIGURACIÓN
@@ -102,6 +103,19 @@ def load_live_events():
     demo_reviews = safe_read_csv(DEMO_REVIEWS_PATH)
     return demo_orders, demo_reviews
 
+def translate_spanish_to_portuguese(text):
+    if text is None or str(text).strip() == "":
+        return ""
+
+    try:
+        return GoogleTranslator(
+            source="es",
+            target="pt"
+        ).translate(str(text))
+
+    except Exception:
+        return None
+    
 def prepare_cluster_summary_for_simulation(cluster_summary):
     summary = cluster_summary.copy()
 
@@ -394,8 +408,13 @@ elif section == "Demo tienda":
 
     review_text = st.text_area(
         "Texto de la reseña",
-        value="produto chegou atrasado e veio quebrado",
-        help="Texto que será analizado automáticamente por el modelo de sentimiento."
+        value="El producto llegó tarde y vino roto",
+        help="Escribe la reseña en español. La aplicación la traducirá internamente a portugués antes de aplicar el modelo."
+    )
+
+    st.info(
+        "La reseña se introduce en español para facilitar el uso de la demo. "
+        "Antes de aplicar el modelo de sentimiento, se traduce internamente a portugués."
     )
 
     st.markdown("""
@@ -415,9 +434,19 @@ elif section == "Demo tienda":
         else:
             event_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             demo_order_id = "demo_" + str(uuid.uuid4())[:8]
+            customer_unique_id = "demo_customer_" + str(uuid.uuid4())[:8]
+            
+            text_for_model = translate_spanish_to_portuguese(review_text)
 
-            prediction = sentiment_model.predict([review_text])[0]
-            probabilities = sentiment_model.predict_proba([review_text])[0]
+            if text_for_model is None or str(text_for_model).strip() == "":
+                st.error(
+                    "No se pudo traducir la reseña antes del análisis. "
+                    "Comprueba la conexión a internet o inténtalo de nuevo."
+                )
+                st.stop()
+
+            prediction = sentiment_model.predict([text_for_model])[0]
+            probabilities = sentiment_model.predict_proba([text_for_model])[0]
             classes = sentiment_model.classes_
             prob_dict = dict(zip(classes, probabilities))
             confidence = prob_dict[prediction]
@@ -436,8 +465,9 @@ elif section == "Demo tienda":
             review_row = {
                 "event_time": event_time,
                 "order_id": demo_order_id,
-                "customer_unique_id": selected_customer,
+                "customer_unique_id": customer_unique_id,
                 "review_text": review_text,
+                "translated_text_for_model": text_for_model,
                 "predicted_sentiment": prediction,
                 "confidence": confidence
             }
@@ -446,6 +476,15 @@ elif section == "Demo tienda":
             append_row_to_csv(DEMO_REVIEWS_PATH, review_row)
 
             st.success("Compra y reseña demo registradas correctamente.")
+
+            st.subheader("Resultado del análisis de la reseña")
+
+            st.markdown("**Reseña introducida:**")
+            st.write(review_text)
+
+            col1, col2 = st.columns(2)
+            col1.metric("Sentimiento detectado", prediction.upper())
+            col2.metric("Confianza del modelo", f"{confidence:.2%}")
 
             col1, col2, col3 = st.columns(3)
             col1.metric("Pedido demo", demo_order_id)
@@ -563,12 +602,31 @@ elif section == "Eventos en vivo":
             "event_time": "Fecha del evento",
             "order_id": "Pedido",
             "customer_unique_id": "Cliente",
-            "review_text": "Texto de la reseña",
+            "review_text": "Reseña introducida",
             "predicted_sentiment": "Sentimiento detectado",
-            "confidence": "Confianza"
+            "confidence": "Confianza",
+            "translated_text_for_model": "Texto técnico usado por el modelo"
         })
 
-        st.dataframe(reviews_display, use_container_width=True)
+        visible_review_cols = [
+            "Fecha del evento",
+            "Pedido",
+            "Cliente",
+            "Reseña introducida",
+            "Sentimiento detectado",
+            "Confianza"
+        ]
+
+        visible_review_cols = [
+            col for col in visible_review_cols
+            if col in reviews_display.columns
+        ]
+
+        st.dataframe(
+            reviews_display[visible_review_cols],
+            use_container_width=True
+        )
+
 
         sentiment_counts = (
             demo_reviews["predicted_sentiment"]
@@ -599,12 +657,30 @@ elif section == "Eventos en vivo":
                 "event_time": "Fecha del evento",
                 "order_id": "Pedido",
                 "customer_unique_id": "Cliente",
-                "review_text": "Texto de la reseña",
+                "review_text": "Reseña introducida",
                 "predicted_sentiment": "Sentimiento detectado",
-                "confidence": "Confianza"
+                "confidence": "Confianza",
+                "translated_text_for_model": "Texto técnico usado por el modelo"
             })
 
-            st.dataframe(negative_display.head(10))
+            visible_negative_cols = [
+                "Fecha del evento",
+                "Pedido",
+                "Cliente",
+                "Reseña introducida",
+                "Sentimiento detectado",
+                "Confianza"
+            ]
+
+            visible_negative_cols = [
+                col for col in visible_negative_cols
+                if col in negative_display.columns
+            ]
+
+            st.dataframe(
+                negative_display[visible_negative_cols].head(10),
+                use_container_width=True
+            )
 
             st.markdown("""
             **Interpretación:**  
@@ -1035,16 +1111,30 @@ elif section == "Análisis de sentimiento":
 
     review_text = st.text_area(
         "Escribe aquí la reseña del cliente",
-        value="produto chegou atrasado e veio quebrado",
-        help="Puedes escribir una reseña en portugués similar a las del dataset original."
+        value="El producto llegó tarde y vino roto",
+        help="Escribe la reseña en español. La aplicación la traducirá internamente antes de aplicar el modelo."
+    )
+    st.info(
+        "El usuario escribe la reseña en español. "
+        "Antes de aplicar el modelo, la aplicación la traduce internamente a portugués, "
+        "ya que el modelo fue entrenado con reseñas originales en portugués."
     )
 
     if st.button("Analizar reseña"):
         if review_text.strip() == "":
             st.warning("Introduce un texto para poder analizar la reseña.")
         else:
-            prediction = sentiment_model.predict([review_text])[0]
-            probabilities = sentiment_model.predict_proba([review_text])[0]
+            text_for_model = translate_spanish_to_portuguese(review_text)
+
+            if text_for_model is None or str(text_for_model).strip() == "":
+                st.error(
+                    "No se pudo traducir la reseña antes del análisis. "
+                    "Comprueba la conexión a internet o inténtalo de nuevo."
+                )
+                st.stop()
+
+            prediction = sentiment_model.predict([text_for_model])[0]
+            probabilities = sentiment_model.predict_proba([text_for_model])[0]
             classes = sentiment_model.classes_
 
             prob_dict = dict(zip(classes, probabilities))
@@ -1052,6 +1142,8 @@ elif section == "Análisis de sentimiento":
             
             st.divider()
             st.subheader("Resultado del análisis")
+            st.markdown("**Reseña analizada:**")
+            st.write(review_text)
 
             col1, col2 = st.columns(2)
             col1.metric("Sentimiento detectado", prediction.upper())
@@ -1108,7 +1200,8 @@ elif section == "Análisis de sentimiento":
 
                 Este modelo está pensado para apoyar la toma de decisiones, no para sustituir completamente la revisión humana.
                 """)
-
+                st.markdown("**Texto traducido internamente y utilizado por el modelo:**")
+                st.write(text_for_model)
                 st.write("Probabilidades internas:")
                 st.json({k: float(v) for k, v in prob_dict.items()})
 # =========================

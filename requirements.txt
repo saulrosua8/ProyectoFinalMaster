@@ -5,3 +5,4 @@ joblib
 streamlit
 plotly
 matplotlib
+deep-translator
